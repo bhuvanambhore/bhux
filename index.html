@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MyTube</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f9f9f9;
+      margin: 0;
+    }
+    header {
+      background: red;
+      padding: 15px;
+      color: white;
+      font-size: 22px;
+    }
+    .search-box {
+      text-align: center;
+      margin: 20px;
+    }
+    input {
+      width: 60%;
+      padding: 10px;
+    }
+    button {
+      padding: 10px;
+      background: red;
+      color: white;
+      border: none;
+    }
+    .videos {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      padding: 20px;
+    }
+    iframe {
+      width: 100%;
+      height: 200px;
+    }
+  </style>
+</head>
+<body>
+
+<header>MyTube 🔥</header>
+
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="Search videos...">
+  <button onclick="searchVideos()">Search</button>
+</div>
+
+<div class="videos" id="results"></div>
+
+<script>
+function searchVideos() {
+  let query = document.getElementById("searchInput").value;
+  let apiKey = "AIzaSyCYOCDY5ddl1A1urfPM9rsB2VeOyhCjIAg";
+  let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=9&q=${query}&key=${apiKey}`;
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      let output = "";
+      data.items.forEach(item => {
+        let videoId = item.id.videoId;
+        output += `
+          <div>
+            <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+          </div>
+        `;
+      });
+      document.getElementById("results").innerHTML = output;
+    });
+}
+</script>
+
+</body>
+</html>
