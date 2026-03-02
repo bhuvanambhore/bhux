@@ -1,21 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MyTube</title>
+  <title>MyTube Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f9f9f9;
+      transition: 0.3s;
     }
 
     header {
       background: #ff0000;
       color: white;
       padding: 15px;
-      font-size: 22px;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .controls button {
+      padding: 8px 12px;
+      margin-left: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .dark {
+      background: #181818;
+      color: white;
     }
 
     .search-box {
@@ -23,67 +42,108 @@
       margin: 20px;
     }
 
-    input {
-      width: 60%;
+    input, select {
       padding: 10px;
-      font-size: 16px;
-    }
-
-    button {
-      padding: 10px 15px;
-      background: #ff0000;
-      color: white;
-      border: none;
-      cursor: pointer;
+      margin: 5px;
+      width: 200px;
     }
 
     .videos {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 20px;
       padding: 20px;
     }
 
     .video-card {
       background: white;
-      padding: 10px;
       border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      cursor: pointer;
+      overflow: hidden;
+      transition: 0.2s;
     }
 
-    iframe {
+    .dark .video-card {
+      background: #242424;
+    }
+
+    .video-card img {
       width: 100%;
-      height: 200px;
-      border-radius: 8px;
     }
 
-    h4 {
-      margin: 10px 0;
-      font-size: 16px;
+    .video-card h4 {
+      padding: 10px;
+      margin: 0;
+      font-size: 15px;
+    }
+
+    #playerModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    #playerModal iframe {
+      width: 80%;
+      height: 60%;
+    }
+
+    .close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 30px;
+      color: white;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-<header>MyTube 🔥</header>
+<header>
+  <div class="logo">MyTube 🔥</div>
+  <div class="controls">
+    <button onclick="toggleDark()">Dark Mode</button>
+    <button onclick="addVideo()">Add Video</button>
+  </div>
+</header>
 
 <div class="search-box">
-  <input type="text" id="searchInput" placeholder="Search in MyTube...">
+  <input type="text" id="searchInput" placeholder="Search...">
+  <select id="categoryFilter">
+    <option value="">All Categories</option>
+    <option value="Music">Music</option>
+    <option value="Study">Study</option>
+    <option value="Motivation">Motivation</option>
+  </select>
   <button onclick="searchVideos()">Search</button>
 </div>
 
 <div class="videos" id="results"></div>
 
+<div id="playerModal">
+  <span class="close" onclick="closePlayer()">✖</span>
+  <iframe id="videoPlayer" frameborder="0" allowfullscreen></iframe>
+</div>
+
 <script>
 let videos = [
   {
     title: "First Video",
-    url: "https://www.youtube.com/embed/llcI_-IB0xg"
+    id: "llcI_-IB0xg",
+    category: "Music"
   },
   {
     title: "Second Video",
-    url: "https://www.youtube.com/embed/-JkWVF0i6Wo"
+    id: "-JkWVF0i6Wo",
+    category: "Motivation"
   }
 ];
 
@@ -91,9 +151,9 @@ function displayVideos(list) {
   let output = "";
   list.forEach(video => {
     output += `
-      <div class="video-card">
+      <div class="video-card" onclick="openPlayer('${video.id}')">
+        <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg">
         <h4>${video.title}</h4>
-        <iframe src="${video.url}" allowfullscreen></iframe>
       </div>
     `;
   });
@@ -101,11 +161,41 @@ function displayVideos(list) {
 }
 
 function searchVideos() {
-  let searchText = document.getElementById("searchInput").value.toLowerCase();
+  let text = document.getElementById("searchInput").value.toLowerCase();
+  let category = document.getElementById("categoryFilter").value;
+
   let filtered = videos.filter(video =>
-    video.title.toLowerCase().includes(searchText)
+    video.title.toLowerCase().includes(text) &&
+    (category === "" || video.category === category)
   );
+
   displayVideos(filtered);
+}
+
+function openPlayer(id) {
+  document.getElementById("videoPlayer").src =
+    "https://www.youtube.com/embed/" + id;
+  document.getElementById("playerModal").style.display = "flex";
+}
+
+function closePlayer() {
+  document.getElementById("playerModal").style.display = "none";
+  document.getElementById("videoPlayer").src = "";
+}
+
+function toggleDark() {
+  document.body.classList.toggle("dark");
+}
+
+function addVideo() {
+  let title = prompt("Enter video title:");
+  let id = prompt("Enter YouTube Video ID (example: dQw4w9WgXcQ):");
+  let category = prompt("Enter category (Music/Study/Motivation):");
+
+  if(title && id && category) {
+    videos.push({ title, id, category });
+    displayVideos(videos);
+  }
 }
 
 displayVideos(videos);
