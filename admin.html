@@ -28,6 +28,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    // LOGIN FUNCTION
     window.login = function() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
@@ -35,22 +36,28 @@
         .catch(err => alert(err.message));
     };
 
+    // LOGOUT
     window.logout = function() {
       signOut(auth);
     };
 
+    // AUTH STATE
     onAuthStateChanged(auth, user => {
+      const panel = document.getElementById("panel");
+      const loginSection = document.getElementById("loginSection");
+
       if(user && user.email === ADMIN_EMAIL){
-        document.getElementById("panel").style.display = "block";
+        loginSection.style.display = "none";
+        panel.style.display = "block";
         loadVideos();
-        document.getElementById("loginSection").style.display = "none";
       } else {
+        loginSection.style.display = "block";   // <-- ALWAYS SHOW LOGIN
+        panel.style.display = "none";
         if(user) alert("Access Denied. Admin Only.");
-        document.getElementById("panel").style.display = "none";
-        document.getElementById("loginSection").style.display = "block";
       }
     });
 
+    // ADD VIDEO
     window.addVideo = async function() {
       const title = document.getElementById("videoTitle").value;
       const videoId = document.getElementById("videoId").value;
@@ -60,15 +67,18 @@
       document.getElementById("videoId").value="";
     };
 
+    // DELETE VIDEO
     window.deleteVideo = async function(id){
       await deleteDoc(doc(db,"videos",id));
     };
 
+    // EDIT VIDEO
     window.editVideo = async function(id){
       const newTitle = prompt("New title:");
       if(newTitle) await updateDoc(doc(db,"videos",id), { title:newTitle });
     };
 
+    // LOAD VIDEOS
     function loadVideos(){
       const container = document.getElementById("videos");
       onSnapshot(collection(db,"videos"), snapshot=>{
@@ -91,7 +101,7 @@
 
   <style>
     body { font-family:Arial; background:#111; color:white; }
-    header { background:red; padding:15px; }
+    header { background:red; padding:15px; text-align:center; }
     .card { background:#222; padding:10px; margin:10px; border-radius:8px; }
     input { padding:8px; margin:5px; }
     button { padding:5px 10px; margin:5px; cursor:pointer; }
@@ -100,14 +110,16 @@
 
 <body>
 
-<header>👑 Admin Panel</header>
+<header>👑 MyTube Admin Panel</header>
 
+<!-- LOGIN SECTION -->
 <div id="loginSection">
   <input id="email" placeholder="Admin Email">
   <input id="password" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
 </div>
 
+<!-- PANEL VISIBLE ONLY AFTER ADMIN LOGIN -->
 <div id="panel" style="display:none;">
   <h2>Upload Video</h2>
   <input id="videoTitle" placeholder="Title">
@@ -116,6 +128,7 @@
 
   <h2>Manage Videos</h2>
   <div id="videos"></div>
+
   <button onclick="logout()">Logout</button>
 </div>
 
