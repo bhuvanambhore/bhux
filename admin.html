@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } 
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const ADMIN_EMAIL = "YOUR_ADMIN_EMAIL";
+
+    const firebaseConfig = {
+      apiKey: "PASTE",
+      authDomain: "PASTE",
+      projectId: "PASTE",
+      storageBucket: "PASTE",
+      messagingSenderId: "PASTE",
+      appId: "PASTE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.login = function() {
+      signInWithEmailAndPassword(auth, email.value, password.value);
+    };
+
+    window.logout = function() {
+      signOut(auth);
+    };
+
+    onAuthStateChanged(auth, user => {
+      if(user && user.email === ADMIN_EMAIL) {
+        document.getElementById("panel").style.display = "block";
+        loadVideos();
+      } else {
+        document.getElementById("panel").style.display = "none";
+      }
+    });
+
+    window.addVideo = async function() {
+      await addDoc(collection(db,"videos"), {
+        title: videoTitle.value,
+        id: videoId.value,
+        views: 0
+      });
+    };
+
+    window.deleteVideo = async function(id) {
+      await deleteDoc(doc(db,"videos",id));
+    };
+
+    window.editVideo = async function(id) {
+      const newTitle = prompt("New title:");
+      if(newTitle){
+        await updateDoc(doc(db,"videos",id), { title:newTitle });
+      }
+    };
+
+    function loadVideos(){
+      onSnapshot(collection(db,"videos"), snapshot=>{
+        let output="";
+        snapshot.forEach(d=>{
+          let v=d.data();
+          output+=`
+            <div class="card">
+              <img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg">
+              <h3>${v.title}</h3>
+              <button onclick="editVideo('${d.id}')">Edit</button>
+              <button onclick="deleteVideo('${d.id}')">Delete</button>
+            </div>
+          `;
+        });
+        document.getElementById("videos").innerHTML=output;
+      });
+    }
+  </script>
+
+  <style>
+    body { font-family:Arial; background:#111; color:white; }
+    header { background:red; padding:15px; }
+    .card { background:#222; padding:10px; margin:10px; border-radius:8px; }
+    button { margin:5px; }
+  </style>
+</head>
+<body>
+
+<header>👑 Admin Panel</header>
+
+<div>
+  <input id="email" placeholder="Admin Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<div id="panel" style="display:none;">
+  <h2>Upload Video</h2>
+  <input id="videoTitle" placeholder="Title">
+  <input id="videoId" placeholder="Video ID">
+  <button onclick="addVideo()">Upload</button>
+
+  <h2>Manage Videos</h2>
+  <div id="videos"></div>
+</div>
+
+</body>
+</html>
