@@ -1,20 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MyTube Admin</title>
+  <title>MyTube</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot } 
+    import { getFirestore, collection, onSnapshot } 
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // 🔐 YOUR ADMIN EMAIL
-    const ADMIN_EMAIL = "bhuvanmambhore@gmail.com";
-
-    // 🔥 YOUR FIREBASE CONFIG
     const firebaseConfig = {
       apiKey: "AIzaSyC6K2g9iMqZkQg8QJV1dU_dqpQXjmcqfPY",
       authDomain: "mytube-pro-8574b.firebaseapp.com",
@@ -25,64 +19,9 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 🔑 LOGIN (Admin Only)
-    window.login = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      signInWithEmailAndPassword(auth, email, password)
-        .catch(error => alert(error.message));
-    };
-
-    // 🚪 LOGOUT
-    window.logout = function () {
-      signOut(auth);
-    };
-
-    // 🔐 AUTH STATE CHECK
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        if (user.email === ADMIN_EMAIL) {
-          document.getElementById("userInfo").innerText = "👑 Admin: " + user.email;
-          document.getElementById("uploadSection").style.display = "block";
-          loadVideos();
-        } else {
-          alert("Access Denied. Admin Only.");
-          signOut(auth);
-        }
-      } else {
-        document.getElementById("userInfo").innerText = "";
-        document.getElementById("uploadSection").style.display = "none";
-      }
-    });
-
-    // ➕ ADD VIDEO
-    window.addVideo = async function () {
-      const title = document.getElementById("videoTitle").value;
-      const videoId = document.getElementById("videoId").value;
-
-      if (!title || !videoId) {
-        alert("Enter Title and Video ID");
-        return;
-      }
-
-      await addDoc(collection(db, "videos"), {
-        title: title,
-        id: videoId
-      });
-
-      alert("Video Uploaded!");
-      document.getElementById("videoTitle").value = "";
-      document.getElementById("videoId").value = "";
-    };
-
-    // 📺 LOAD VIDEOS
     function loadVideos() {
-      const container = document.getElementById("videos");
-
       onSnapshot(collection(db, "videos"), snapshot => {
         let output = "";
         snapshot.forEach(doc => {
@@ -90,7 +29,7 @@
           output += `
             <div class="card">
               <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg">
-              <h4>${video.title}</h4>
+              <h3>${video.title}</h3>
               <iframe width="100%" height="200"
                 src="https://www.youtube.com/embed/${video.id}"
                 frameborder="0" allowfullscreen>
@@ -98,84 +37,25 @@
             </div>
           `;
         });
-        container.innerHTML = output;
+        document.getElementById("videos").innerHTML = output;
       });
     }
+
+    window.onload = loadVideos;
   </script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #f4f4f4;
-    }
-
-    header {
-      background: red;
-      color: white;
-      padding: 15px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .auth, .upload {
-      padding: 20px;
-    }
-
-    input {
-      padding: 8px;
-      margin: 5px;
-    }
-
-    button {
-      padding: 8px 12px;
-      margin: 5px;
-      cursor: pointer;
-    }
-
-    .videos {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
-      padding: 20px;
-    }
-
-    .card {
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    img {
-      width: 100%;
-      border-radius: 6px;
-    }
+    body { margin:0; font-family:Arial; background:#f4f4f4; }
+    header { background:red; color:white; padding:15px; text-align:center; }
+    .videos { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:20px; padding:20px; }
+    .card { background:white; padding:10px; border-radius:8px; }
+    img { width:100%; border-radius:6px; }
   </style>
 </head>
-
 <body>
 
-<header>
-  <div>🔥 MyTube Admin Panel</div>
-  <div id="userInfo"></div>
-</header>
-
-<div class="auth">
-  <input type="email" id="email" placeholder="Admin Email">
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="login()">Login</button>
-  <button onclick="logout()">Logout</button>
-</div>
-
-<div class="upload" id="uploadSection" style="display:none;">
-  <input type="text" id="videoTitle" placeholder="Video Title">
-  <input type="text" id="videoId" placeholder="YouTube Video ID">
-  <button onclick="addVideo()">Upload Video</button>
-</div>
-
+<header>🔥 MyTube</header>
 <div class="videos" id="videos"></div>
 
 </body>
 </html>
-
