@@ -1,259 +1,179 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MyTube Ultra</title>
+  <title>MyTube Ultimate</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase SDK (Modern Version) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot } 
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // 🔥 PASTE YOUR FIREBASE CONFIG HERE
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6K2g9iMqZkQg8QJV1dU_dqpQXjmcqfPY",
+      authDomain: "mytube-pro-8574b.firebaseapp.com",
+      projectId: "mytube-pro-8574b",
+      storageBucket: "mytube-pro-8574b.firebasestorage.app",
+      messagingSenderId: "257345211479",
+      appId: "1:257345211479:web:de0b2e790a4d4dc4642712"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Register
+    window.register = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => alert("Registered Successfully"))
+        .catch(error => alert(error.message));
+    };
+
+    // Login
+    window.login = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => alert("Login Successful"))
+        .catch(error => alert(error.message));
+    };
+
+    // Logout
+    window.logout = function () {
+      signOut(auth);
+    };
+
+    // Auth State
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        document.getElementById("userInfo").innerText = "👤 " + user.email;
+        loadVideos();
+      } else {
+        document.getElementById("userInfo").innerText = "";
+      }
+    });
+
+    // Add Video
+    window.addVideo = async function () {
+      const title = document.getElementById("videoTitle").value;
+      const videoId = document.getElementById("videoId").value;
+
+      if (!title || !videoId) {
+        alert("Enter Title and Video ID");
+        return;
+      }
+
+      await addDoc(collection(db, "videos"), {
+        title: title,
+        id: videoId
+      });
+
+      alert("Video Uploaded!");
+    };
+
+    // Load Videos
+    function loadVideos() {
+      const videoContainer = document.getElementById("videos");
+
+      onSnapshot(collection(db, "videos"), snapshot => {
+        let output = "";
+        snapshot.forEach(doc => {
+          const video = doc.data();
+          output += `
+            <div class="card">
+              <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg">
+              <h4>${video.title}</h4>
+              <iframe width="100%" height="200"
+                src="https://www.youtube.com/embed/${video.id}"
+                frameborder="0" allowfullscreen>
+              </iframe>
+            </div>
+          `;
+        });
+        videoContainer.innerHTML = output;
+      });
+    }
+  </script>
+
   <style>
     body {
-      margin:0;
+      margin: 0;
       font-family: Arial;
-      background:#f9f9f9;
-      display:flex;
-    }
-
-    .dark {
-      background:#181818;
-      color:white;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width:200px;
-      background:#202020;
-      color:white;
-      padding:20px;
-      height:100vh;
-    }
-
-    .sidebar h2 {
-      margin-top:0;
-    }
-
-    .sidebar button {
-      width:100%;
-      margin:5px 0;
-      padding:8px;
-      border:none;
-      cursor:pointer;
-    }
-
-    /* Main */
-    .main {
-      flex:1;
+      background: #f4f4f4;
     }
 
     header {
-      background:red;
-      color:white;
-      padding:15px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
+      background: red;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
     }
 
-    .search-box {
-      text-align:center;
-      margin:20px;
+    .auth, .upload {
+      padding: 20px;
     }
 
     input {
-      padding:8px;
-      margin:5px;
+      padding: 8px;
+      margin: 5px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 5px;
+      cursor: pointer;
     }
 
     .videos {
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-      gap:20px;
-      padding:20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 20px;
     }
 
-    .video-card {
-      background:white;
-      border-radius:8px;
-      padding:10px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
-      cursor:pointer;
+    .card {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    .dark .video-card {
-      background:#242424;
-    }
-
-    .video-card img {
-      width:100%;
-      border-radius:6px;
-    }
-
-    .video-card h4 {
-      margin:8px 0;
-    }
-
-    .actions {
-      display:flex;
-      justify-content:space-between;
-      font-size:14px;
-    }
-
-    #playerModal {
-      display:none;
-      position:fixed;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      background:rgba(0,0,0,0.8);
-      justify-content:center;
-      align-items:center;
-    }
-
-    #playerModal iframe {
-      width:80%;
-      height:60%;
-    }
-
-    .close {
-      position:absolute;
-      top:20px;
-      right:30px;
-      font-size:30px;
-      color:white;
-      cursor:pointer;
-    }
-
-    #loginBox {
-      position:fixed;
-      top:30%;
-      left:40%;
-      background:white;
-      padding:20px;
-      border-radius:8px;
-      display:none;
+    img {
+      width: 100%;
+      border-radius: 6px;
     }
   </style>
 </head>
+
 <body>
 
-<div class="sidebar">
-  <h2>MyTube</h2>
-  <button onclick="toggleDark()">Dark Mode</button>
-  <button onclick="addVideo()">Add Video</button>
-  <button onclick="showLogin()">Login</button>
-</div>
+<header>
+  <div>🔥 MyTube Ultimate</div>
+  <div id="userInfo"></div>
+</header>
 
-<div class="main">
-  <header>
-    <div>🔥 MyTube Ultra</div>
-    <div id="userDisplay"></div>
-  </header>
-
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search...">
-    <button onclick="searchVideos()">Search</button>
-  </div>
-
-  <div class="videos" id="results"></div>
-</div>
-
-<div id="playerModal">
-  <span class="close" onclick="closePlayer()">✖</span>
-  <iframe id="videoPlayer" frameborder="0" allowfullscreen></iframe>
-</div>
-
-<div id="loginBox">
-  <h3>Login</h3>
-  <input type="text" id="username" placeholder="Enter username">
+<div class="auth">
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="register()">Register</button>
   <button onclick="login()">Login</button>
+  <button onclick="logout()">Logout</button>
 </div>
 
-<script>
-let videos = JSON.parse(localStorage.getItem("videos")) || [
-  { title:"First Video", id:"llcI_-IB0xg", views:0, likes:0 },
-  { title:"Second Video", id:"-JkWVF0i6Wo", views:0, likes:0 }
-];
+<div class="upload">
+  <input type="text" id="videoTitle" placeholder="Video Title">
+  <input type="text" id="videoId" placeholder="YouTube Video ID">
+  <button onclick="addVideo()">Upload Video</button>
+</div>
 
-function saveVideos(){
-  localStorage.setItem("videos", JSON.stringify(videos));
-}
-
-function displayVideos(list){
-  let output="";
-  list.forEach((video,index)=>{
-    output+=`
-      <div class="video-card">
-        <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg"
-             onclick="openPlayer('${video.id}',${index})">
-        <h4>${video.title}</h4>
-        <div class="actions">
-          <span>👁 ${video.views}</span>
-          <span onclick="likeVideo(${index})">👍 ${video.likes}</span>
-        </div>
-      </div>
-    `;
-  });
-  document.getElementById("results").innerHTML=output;
-}
-
-function openPlayer(id,index){
-  videos[index].views++;
-  saveVideos();
-  displayVideos(videos);
-  document.getElementById("videoPlayer").src="https://www.youtube.com/embed/"+id;
-  document.getElementById("playerModal").style.display="flex";
-}
-
-function closePlayer(){
-  document.getElementById("playerModal").style.display="none";
-  document.getElementById("videoPlayer").src="";
-}
-
-function likeVideo(index){
-  videos[index].likes++;
-  saveVideos();
-  displayVideos(videos);
-}
-
-function searchVideos(){
-  let text=document.getElementById("searchInput").value.toLowerCase();
-  let filtered=videos.filter(v=>v.title.toLowerCase().includes(text));
-  displayVideos(filtered);
-}
-
-function addVideo(){
-  let title=prompt("Video Title:");
-  let id=prompt("YouTube Video ID:");
-  if(title && id){
-    videos.push({title,id,views:0,likes:0});
-    saveVideos();
-    displayVideos(videos);
-  }
-}
-
-function toggleDark(){
-  document.body.classList.toggle("dark");
-}
-
-function showLogin(){
-  document.getElementById("loginBox").style.display="block";
-}
-
-function login(){
-  let user=document.getElementById("username").value;
-  if(user){
-    localStorage.setItem("user",user);
-    document.getElementById("userDisplay").innerText="👤 "+user;
-    document.getElementById("loginBox").style.display="none";
-  }
-}
-
-window.onload=function(){
-  let user=localStorage.getItem("user");
-  if(user){
-    document.getElementById("userDisplay").innerText="👤 "+user;
-  }
-  displayVideos(videos);
-}
-</script>
+<div class="videos" id="videos"></div>
 
 </body>
 </html>
