@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MyTube</title>
+  <title>MyTube Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot } 
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } 
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // 🔐 ADMIN EMAIL
+    const ADMIN_EMAIL = "bhuvanmambhore@email.com";
 
     // 🔥 FIREBASE CONFIG
     const firebaseConfig = {
@@ -20,43 +25,112 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
 
-    function loadVideos() {
-      onSnapshot(collection(db, "videos"), snapshot => {
-        let output = "";
-        snapshot.forEach(doc => {
-          const video = doc.data();
-          output += `
+    // LOGIN FUNCTION
+    window.login = function() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .catch(err => alert(err.message));
+    };
+
+    // LOGOUT
+    window.logout = function() {
+      signOut(auth);
+    };
+
+    // AUTH STATE
+    onAuthStateChanged(auth, user => {
+      const panel = document.getElementById("panel");
+      const loginSection = document.getElementById("loginSection");
+
+      if(user && user.email === ADMIN_EMAIL){
+        loginSection.style.display = "none";
+        panel.style.display = "block";
+        loadVideos();
+      } else {
+        loginSection.style.display = "block";   // <-- ALWAYS SHOW LOGIN
+        panel.style.display = "none";
+        if(user) alert("Access Denied. Admin Only.");
+      }
+    });
+
+    // ADD VIDEO
+    window.addVideo = async function() {
+      const title = document.getElementById("videoTitle").value;
+      const videoId = document.getElementById("videoId").value;
+      if(!title || !videoId){ alert("Enter title and video ID"); return; }
+      await addDoc(collection(db,"videos"), { title:title, id:videoId });
+      document.getElementById("videoTitle").value="";
+      document.getElementById("videoId").value="";
+    };
+
+    // DELETE VIDEO
+    window.deleteVideo = async function(id){
+      await deleteDoc(doc(db,"videos",id));
+    };
+
+    // EDIT VIDEO
+    window.editVideo = async function(id){
+      const newTitle = prompt("New title:");
+      if(newTitle) await updateDoc(doc(db,"videos",id), { title:newTitle });
+    };
+
+    // LOAD VIDEOS
+    function loadVideos(){
+      const container = document.getElementById("videos");
+      onSnapshot(collection(db,"videos"), snapshot=>{
+        let output="";
+        snapshot.forEach(d=>{
+          const v = d.data();
+          output+=`
             <div class="card">
-              <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg">
-              <h3>${video.title}</h3>
-              <iframe width="100%" height="200"
-                src="https://www.youtube.com/embed/${video.id}"
-                frameborder="0" allowfullscreen>
-              </iframe>
+              <img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg">
+              <h3>${v.title}</h3>
+              <button onclick="editVideo('${d.id}')">Edit</button>
+              <button onclick="deleteVideo('${d.id}')">Delete</button>
             </div>
           `;
         });
-        document.getElementById("videos").innerHTML = output;
+        container.innerHTML = output;
       });
     }
-
-    window.onload = loadVideos;
   </script>
 
   <style>
-    body { margin:0; font-family:Arial; background:#f4f4f4; }
-    header { background:red; color:white; padding:15px; text-align:center; }
-    .videos { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:20px; padding:20px; }
-    .card { background:white; padding:10px; border-radius:8px; }
-    img { width:100%; border-radius:6px; }
+    body { font-family:Arial; background:#111; color:white; }
+    header { background:red; padding:15px; text-align:center; }
+    .card { background:#222; padding:10px; margin:10px; border-radius:8px; }
+    input { padding:8px; margin:5px; }
+    button { padding:5px 10px; margin:5px; cursor:pointer; }
   </style>
 </head>
+
 <body>
 
-<header>🔥 MyTube</header>
-<div class="videos" id="videos"></div>
+<header>👑 MyTube Admin Panel</header>
+
+<!-- LOGIN SECTION -->
+<div id="loginSection">
+  <input id="email" placeholder="Admin Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- PANEL VISIBLE ONLY AFTER ADMIN LOGIN -->
+<div id="panel" style="display:none;">
+  <h2>Upload Video</h2>
+  <input id="videoTitle" placeholder="Title">
+  <input id="videoId" placeholder="YouTube Video ID">
+  <button onclick="addVideo()">Upload</button>
+
+  <h2>Manage Videos</h2>
+  <div id="videos"></div>
+
+  <button onclick="logout()">Logout</button>
+</div>
 
 </body>
 </html>
