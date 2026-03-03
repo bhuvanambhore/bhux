@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Panel</title>
+  <title>MyTube Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script type="module">
@@ -11,31 +11,41 @@
     import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } 
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    const ADMIN_EMAIL = "YOUR_ADMIN_EMAIL";
+    // 🔐 ADMIN EMAIL (must match Firebase Authentication exactly)
+    const ADMIN_EMAIL = "bhuvanmambhore@email.com";
 
+    // 🔥 FIREBASE CONFIG
     const firebaseConfig = {
-      apiKey: "PASTE",
-      authDomain: "PASTE",
-      projectId: "PASTE",
-      storageBucket: "PASTE",
-      messagingSenderId: "PASTE",
-      appId: "PASTE"
+      apiKey: "AIzaSyC6K2g9iMqZkQg8QJV1dU_dqpQXjmcqfPY",
+      authDomain: "mytube-pro-8574b.firebaseapp.com",
+      projectId: "mytube-pro-8574b",
+      storageBucket: "mytube-pro-8574b.firebasestorage.app",
+      messagingSenderId: "257345211479",
+      appId: "1:257345211479:web:de0b2e790a4d4dc4642712"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    window.login = function() {
-      signInWithEmailAndPassword(auth, email.value, password.value);
+    let unsubscribe;
+
+    // LOGIN
+    window.login = function () {
+      signInWithEmailAndPassword(auth, email.value.trim(), password.value.trim())
+        .catch(err => alert(err.message));
     };
 
-    window.logout = function() {
+    // LOGOUT
+    window.logout = function () {
       signOut(auth);
+      location.reload();
     };
 
+    // AUTH CHECK
     onAuthStateChanged(auth, user => {
-      if(user && user.email === ADMIN_EMAIL) {
+      if (user && user.email === ADMIN_EMAIL) {
+        document.getElementById("loginBox").style.display = "none";
         document.getElementById("panel").style.display = "block";
         loadVideos();
       } else {
@@ -43,70 +53,161 @@
       }
     });
 
-    window.addVideo = async function() {
-      await addDoc(collection(db,"videos"), {
+    // ADD VIDEO
+    window.addVideo = async function () {
+      if (!videoTitle.value || !videoId.value) {
+        alert("Enter title and video ID");
+        return;
+      }
+
+      await addDoc(collection(db, "videos"), {
         title: videoTitle.value,
         id: videoId.value,
-        views: 0
+        created: Date.now()
       });
+
+      videoTitle.value = "";
+      videoId.value = "";
     };
 
-    window.deleteVideo = async function(id) {
-      await deleteDoc(doc(db,"videos",id));
-    };
-
-    window.editVideo = async function(id) {
-      const newTitle = prompt("New title:");
-      if(newTitle){
-        await updateDoc(doc(db,"videos",id), { title:newTitle });
+    // DELETE VIDEO
+    window.deleteVideo = async function (id) {
+      if (confirm("Delete this video?")) {
+        await deleteDoc(doc(db, "videos", id));
       }
     };
 
-    function loadVideos(){
-      onSnapshot(collection(db,"videos"), snapshot=>{
-        let output="";
-        snapshot.forEach(d=>{
-          let v=d.data();
-          output+=`
+    // EDIT VIDEO
+    window.editVideo = async function (id) {
+      const newTitle = prompt("Enter new title:");
+      if (newTitle) {
+        await updateDoc(doc(db, "videos", id), {
+          title: newTitle
+        });
+      }
+    };
+
+    // SEARCH
+    window.filterVideos = function () {
+      const search = searchBox.value.toLowerCase();
+      document.querySelectorAll(".card").forEach(card => {
+        card.style.display =
+          card.innerText.toLowerCase().includes(search)
+            ? "block"
+            : "none";
+      });
+    };
+
+    // LOAD VIDEOS
+    function loadVideos() {
+      if (unsubscribe) unsubscribe();
+
+      unsubscribe = onSnapshot(collection(db, "videos"), snapshot => {
+        let output = "";
+
+        snapshot.forEach(d => {
+          let v = d.data();
+          output += `
             <div class="card">
               <img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg">
               <h3>${v.title}</h3>
-              <button onclick="editVideo('${d.id}')">Edit</button>
-              <button onclick="deleteVideo('${d.id}')">Delete</button>
+              <div class="btns">
+                <button onclick="editVideo('${d.id}')">Edit</button>
+                <button onclick="deleteVideo('${d.id}')">Delete</button>
+              </div>
             </div>
           `;
         });
-        document.getElementById("videos").innerHTML=output;
+
+        document.getElementById("videos").innerHTML = output;
       });
     }
   </script>
 
   <style>
-    body { font-family:Arial; background:#111; color:white; }
-    header { background:red; padding:15px; }
-    .card { background:#222; padding:10px; margin:10px; border-radius:8px; }
-    button { margin:5px; }
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #111;
+      color: white;
+    }
+
+    header {
+      background: #cc0000;
+      padding: 15px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    input {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 4px;
+      border: none;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #cc0000;
+      color: white;
+    }
+
+    .card {
+      background: #222;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+    }
+
+    img {
+      width: 100%;
+      border-radius: 6px;
+    }
+
+    .btns {
+      margin-top: 8px;
+    }
   </style>
 </head>
+
 <body>
 
-<header>👑 Admin Panel</header>
+<header>👑 MyTube Admin Panel</header>
 
-<div>
-  <input id="email" placeholder="Admin Email">
-  <input id="password" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
-  <button onclick="logout()">Logout</button>
-</div>
+<div class="container">
 
-<div id="panel" style="display:none;">
-  <h2>Upload Video</h2>
-  <input id="videoTitle" placeholder="Title">
-  <input id="videoId" placeholder="Video ID">
-  <button onclick="addVideo()">Upload</button>
+  <!-- LOGIN -->
+  <div id="loginBox">
+    <h2>Admin Login</h2>
+    <input id="email" placeholder="Admin Email">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+  </div>
 
-  <h2>Manage Videos</h2>
-  <div id="videos"></div>
+  <!-- ADMIN PANEL -->
+  <div id="panel" style="display:none;">
+    <h2>Upload Video</h2>
+    <input id="videoTitle" placeholder="Video Title">
+    <input id="videoId" placeholder="YouTube Video ID">
+    <button onclick="addVideo()">Upload</button>
+
+    <h2>Manage Videos</h2>
+    <input id="searchBox" placeholder="Search..." oninput="filterVideos()">
+    <div id="videos"></div>
+
+    <br>
+    <button onclick="logout()">Logout</button>
+  </div>
+
 </div>
 
 </body>
