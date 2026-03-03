@@ -11,7 +11,7 @@
     import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } 
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // 🔐 ADMIN EMAIL (must match Firebase Authentication exactly)
+    // 🔐 ADMIN EMAIL
     const ADMIN_EMAIL = "bhuvanmambhore@email.com";
 
     // 🔥 FIREBASE CONFIG
@@ -28,186 +28,95 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let unsubscribe;
-
-    // LOGIN
-    window.login = function () {
-      signInWithEmailAndPassword(auth, email.value.trim(), password.value.trim())
+    window.login = function() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
         .catch(err => alert(err.message));
     };
 
-    // LOGOUT
-    window.logout = function () {
+    window.logout = function() {
       signOut(auth);
-      location.reload();
     };
 
-    // AUTH CHECK
     onAuthStateChanged(auth, user => {
-      if (user && user.email === ADMIN_EMAIL) {
-        document.getElementById("loginBox").style.display = "none";
+      if(user && user.email === ADMIN_EMAIL){
         document.getElementById("panel").style.display = "block";
         loadVideos();
+        document.getElementById("loginSection").style.display = "none";
       } else {
+        if(user) alert("Access Denied. Admin Only.");
         document.getElementById("panel").style.display = "none";
+        document.getElementById("loginSection").style.display = "block";
       }
     });
 
-    // ADD VIDEO
-    window.addVideo = async function () {
-      if (!videoTitle.value || !videoId.value) {
-        alert("Enter title and video ID");
-        return;
-      }
-
-      await addDoc(collection(db, "videos"), {
-        title: videoTitle.value,
-        id: videoId.value,
-        created: Date.now()
-      });
-
-      videoTitle.value = "";
-      videoId.value = "";
+    window.addVideo = async function() {
+      const title = document.getElementById("videoTitle").value;
+      const videoId = document.getElementById("videoId").value;
+      if(!title || !videoId){ alert("Enter title and video ID"); return; }
+      await addDoc(collection(db,"videos"), { title:title, id:videoId });
+      document.getElementById("videoTitle").value="";
+      document.getElementById("videoId").value="";
     };
 
-    // DELETE VIDEO
-    window.deleteVideo = async function (id) {
-      if (confirm("Delete this video?")) {
-        await deleteDoc(doc(db, "videos", id));
-      }
+    window.deleteVideo = async function(id){
+      await deleteDoc(doc(db,"videos",id));
     };
 
-    // EDIT VIDEO
-    window.editVideo = async function (id) {
-      const newTitle = prompt("Enter new title:");
-      if (newTitle) {
-        await updateDoc(doc(db, "videos", id), {
-          title: newTitle
-        });
-      }
+    window.editVideo = async function(id){
+      const newTitle = prompt("New title:");
+      if(newTitle) await updateDoc(doc(db,"videos",id), { title:newTitle });
     };
 
-    // SEARCH
-    window.filterVideos = function () {
-      const search = searchBox.value.toLowerCase();
-      document.querySelectorAll(".card").forEach(card => {
-        card.style.display =
-          card.innerText.toLowerCase().includes(search)
-            ? "block"
-            : "none";
-      });
-    };
-
-    // LOAD VIDEOS
-    function loadVideos() {
-      if (unsubscribe) unsubscribe();
-
-      unsubscribe = onSnapshot(collection(db, "videos"), snapshot => {
-        let output = "";
-
-        snapshot.forEach(d => {
-          let v = d.data();
-          output += `
+    function loadVideos(){
+      const container = document.getElementById("videos");
+      onSnapshot(collection(db,"videos"), snapshot=>{
+        let output="";
+        snapshot.forEach(d=>{
+          const v = d.data();
+          output+=`
             <div class="card">
               <img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg">
               <h3>${v.title}</h3>
-              <div class="btns">
-                <button onclick="editVideo('${d.id}')">Edit</button>
-                <button onclick="deleteVideo('${d.id}')">Delete</button>
-              </div>
+              <button onclick="editVideo('${d.id}')">Edit</button>
+              <button onclick="deleteVideo('${d.id}')">Delete</button>
             </div>
           `;
         });
-
-        document.getElementById("videos").innerHTML = output;
+        container.innerHTML = output;
       });
     }
   </script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #111;
-      color: white;
-    }
-
-    header {
-      background: #cc0000;
-      padding: 15px;
-      text-align: center;
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    .container {
-      padding: 20px;
-    }
-
-    input {
-      padding: 8px;
-      margin: 5px;
-      border-radius: 4px;
-      border: none;
-    }
-
-    button {
-      padding: 8px 12px;
-      margin: 5px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      background: #cc0000;
-      color: white;
-    }
-
-    .card {
-      background: #222;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-    }
-
-    img {
-      width: 100%;
-      border-radius: 6px;
-    }
-
-    .btns {
-      margin-top: 8px;
-    }
+    body { font-family:Arial; background:#111; color:white; }
+    header { background:red; padding:15px; }
+    .card { background:#222; padding:10px; margin:10px; border-radius:8px; }
+    input { padding:8px; margin:5px; }
+    button { padding:5px 10px; margin:5px; cursor:pointer; }
   </style>
 </head>
 
 <body>
 
-<header>👑 MyTube Admin Panel</header>
+<header>👑 Admin Panel</header>
 
-<div class="container">
+<div id="loginSection">
+  <input id="email" placeholder="Admin Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+</div>
 
-  <!-- LOGIN -->
-  <div id="loginBox">
-    <h2>Admin Login</h2>
-    <input id="email" placeholder="Admin Email">
-    <input id="password" type="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-  </div>
+<div id="panel" style="display:none;">
+  <h2>Upload Video</h2>
+  <input id="videoTitle" placeholder="Title">
+  <input id="videoId" placeholder="YouTube Video ID">
+  <button onclick="addVideo()">Upload</button>
 
-  <!-- ADMIN PANEL -->
-  <div id="panel" style="display:none;">
-    <h2>Upload Video</h2>
-    <input id="videoTitle" placeholder="Video Title">
-    <input id="videoId" placeholder="YouTube Video ID">
-    <button onclick="addVideo()">Upload</button>
-
-    <h2>Manage Videos</h2>
-    <input id="searchBox" placeholder="Search..." oninput="filterVideos()">
-    <div id="videos"></div>
-
-    <br>
-    <button onclick="logout()">Logout</button>
-  </div>
-
+  <h2>Manage Videos</h2>
+  <div id="videos"></div>
+  <button onclick="logout()">Logout</button>
 </div>
 
 </body>
